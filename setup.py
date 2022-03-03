@@ -168,65 +168,65 @@ class build_ext(_build_ext):
         _build_ext.build_extensions(self)
 
 
-if __name__ == "__main__":
-    import sys
-    import glob
+# if __name__ == "__main__":
+import sys
+import glob
 
-    # Publish the library to PyPI.
-    if "publish" in sys.argv[-1]:
-        os.system("python setup.py sdist upload")
+# Publish the library to PyPI.
+# if "publish" in sys.argv[-1]:
+#     os.system("python setup.py sdist upload")
+#     sys.exit()
+
+# If the kernel specifications are included (development mode) re-compile
+# them first.
+kernel_specs = glob.glob(os.path.join("kernels", "*.yml"))
+if len(kernel_specs):
+    print("Compiling kernels")
+    compile_kernels(kernel_specs)
+    if "kernels" in sys.argv:
         sys.exit()
 
-    # If the kernel specifications are included (development mode) re-compile
-    # them first.
-    kernel_specs = glob.glob(os.path.join("kernels", "*.yml"))
-    if len(kernel_specs):
-        print("Compiling kernels")
-        compile_kernels(kernel_specs)
-        if "kernels" in sys.argv:
-            sys.exit()
+extensions = [
+    Extension("george.kernel_interface",
+                sources=[os.path.join("george", "kernel_interface.cpp")],
+                language="c++"),
+    Extension("george.solvers._hodlr",
+                sources=[os.path.join("george", "solvers", "_hodlr.cpp")],
+                language="c++"),
+]
 
-    extensions = [
-        Extension("george.kernel_interface",
-                  sources=[os.path.join("george", "kernel_interface.cpp")],
-                  language="c++"),
-        Extension("george.solvers._hodlr",
-                  sources=[os.path.join("george", "solvers", "_hodlr.cpp")],
-                  language="c++"),
-    ]
+# Hackishly inject a constant into builtins to enable importing of the
+# package before the library is built.
+if sys.version_info[0] < 3:
+    import __builtin__ as builtins
+else:
+    import builtins
+builtins.__GEORGE_SETUP__ = True
+import george
 
-    # Hackishly inject a constant into builtins to enable importing of the
-    # package before the library is built.
-    if sys.version_info[0] < 3:
-        import __builtin__ as builtins
-    else:
-        import builtins
-    builtins.__GEORGE_SETUP__ = True
-    import george
-
-    setup(
-        name="george",
-        version=george.__version__,
-        author="Daniel Foreman-Mackey",
-        author_email="foreman.mackey@gmail.com",
-        url="https://github.com/dfm/george",
-        license="MIT",
-        packages=["george", "george.solvers"],
-        ext_modules=extensions,
-        description="Blazingly fast Gaussian Processes for regression.",
-        long_description=open("README.rst").read(),
-        package_data={"": ["README.rst", "LICENSE", "AUTHORS.rst",
-                           "HISTORY.rst"]},
-        install_requires=["numpy", "scipy", "pybind11"],
-        include_package_data=True,
-        cmdclass=dict(build_ext=build_ext),
-        classifiers=[
-            "Development Status :: 5 - Production/Stable",
-            "Intended Audience :: Developers",
-            "Intended Audience :: Science/Research",
-            "License :: OSI Approved :: MIT License",
-            "Operating System :: OS Independent",
-            "Programming Language :: Python",
-        ],
-        zip_safe=True,
-    )
+setup(
+    name="george",
+    version=george.__version__,
+    author="Daniel Foreman-Mackey",
+    author_email="foreman.mackey@gmail.com",
+    url="https://github.com/dfm/george",
+    license="MIT",
+    packages=["george", "george.solvers"],
+    ext_modules=extensions,
+    description="Blazingly fast Gaussian Processes for regression.",
+    long_description=open("README.rst").read(),
+    package_data={"": ["README.rst", "LICENSE", "AUTHORS.rst",
+                        "HISTORY.rst"]},
+    install_requires=["numpy", "scipy", "pybind11"],
+    include_package_data=True,
+    cmdclass=dict(build_ext=build_ext),
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+    ],
+    zip_safe=True,
+)
